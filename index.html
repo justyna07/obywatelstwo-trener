@@ -103,6 +103,7 @@ textarea:focus{outline:3px solid var(--accent);border-color:transparent}
   </div>
 </header>
 
+<p id="audio-status" class="note" style="margin:0 0 10px;min-height:1.4em" aria-live="polite"></p>
 <nav class="tabs" role="tablist">
   <button type="button" id="tab-read" role="tab" aria-selected="true" data-tab="read">Czytanie<small>Reading</small></button>
   <button type="button" id="tab-write" role="tab" aria-selected="false" data-tab="write">Pisanie<small>Writing</small></button>
@@ -278,22 +279,23 @@ function pickVoice(){
 }
 if("speechSynthesis" in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
 let current = null; // keep a reference: iOS Safari drops utterances that get garbage-collected
-let unlocked = false;
+function status(msg, bad){ const el=$("audio-status"); el.textContent=msg; el.style.color = bad?"var(--warn)":"var(--muted)"; }
 function speak(text, rate){
-  if(!("speechSynthesis" in window)){ toast("Ta przeglądarka nie czyta na głos. Spróbuj Chrome lub Safari."); return; }
+  if(!("speechSynthesis" in window)){ status("Ta przeglądarka nie czyta na głos. Spróbuj Chrome lub Safari.", true); return; }
   if(!voice) pickVoice();
   const ss = speechSynthesis;
-  // iOS: cancel() immediately before speak() silently kills the new utterance, so only cancel when something is actually playing, then wait a beat
-  const go = ()=>{
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US"; u.rate = rate || 0.85; u.volume = 1; u.pitch = 1; if(voice) u.voice = voice;
-    u.onerror = e=>{ if(e.error!=="interrupted" && e.error!=="canceled") toast("Dźwięk nie zadziałał. Na iPhonie: wyłącz tryb cichy (przełącznik z boku) i podgłośnij."); };
-    current = u;
-    if(ss.paused) ss.resume();
-    ss.speak(u);
-  };
-  if(!unlocked){ unlocked = true; ss.speak(new SpeechSynthesisUtterance("")); } // first tap unlocks audio on iOS
-  if(ss.speaking || ss.pending){ ss.cancel(); setTimeout(go, 120); } else { go(); }
+  // everything synchronous, inside the tap: iOS only allows speech started directly from a user gesture
+  if(ss.paused) ss.resume();
+  ss.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; u.rate = rate || 0.85; u.volume = 1; u.pitch = 1; if(voice) u.voice = voice;
+  let started = false;
+  u.onstart = ()=>{ started = true; status("🔊 Mówię…"); };
+  u.onend = ()=>{ if(started) status(""); };
+  u.onerror = e=>{ if(e.error!=="interrupted" && e.error!=="canceled") status("Błąd dźwięku: "+e.error+". iPhone: wyłącz tryb cichy i podgłośnij.", true); };
+  current = u;
+  ss.speak(u);
+  setTimeout(()=>{ if(!started && !ss.speaking) status("Dźwięk nie ruszył. iPhone: wyłącz tryb cichy (przełącznik z boku), podgłośnij i naciśnij jeszcze raz.", true); }, 1500);
 }
 // iOS pauses synthesis when the screen locks; resume when the page comes back
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && "speechSynthesis" in window && speechSynthesis.paused) speechSynthesis.resume(); });
