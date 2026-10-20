@@ -112,6 +112,7 @@ textarea:focus{outline:3px solid var(--accent);border-color:transparent}
 
 <!-- READING -->
 <section id="view-read">
+  <div class="hint" style="margin-bottom:8px">📱 <b>iPhone:</b> jeśli nie słychać dźwięku, wyłącz tryb cichy (przełącznik z boku telefonu) i podgłośnij.</div>
   <div class="hint">Na egzaminie <b>przeczytasz na głos</b> jedno z trzech zdań. Liczy się zrozumienie, nie akcent. Przeczytaj zdanie, potem naciśnij <b>Posłuchaj</b>, żeby porównać.</div>
   <div class="card">
     <p class="eyebrow">Przeczytaj na głos · Read aloud</p>
@@ -276,13 +277,26 @@ function pickVoice(){
        || vs.find(v=>/en[-_]US/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)) || null;
 }
 if("speechSynthesis" in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+let current = null; // keep a reference: iOS Safari drops utterances that get garbage-collected
+let unlocked = false;
 function speak(text, rate){
   if(!("speechSynthesis" in window)){ toast("Ta przeglądarka nie czyta na głos. Spróbuj Chrome lub Safari."); return; }
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "en-US"; u.rate = rate || 0.85; if(voice) u.voice = voice;
-  speechSynthesis.speak(u);
+  if(!voice) pickVoice();
+  const ss = speechSynthesis;
+  // iOS: cancel() immediately before speak() silently kills the new utterance, so only cancel when something is actually playing, then wait a beat
+  const go = ()=>{
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US"; u.rate = rate || 0.85; u.volume = 1; u.pitch = 1; if(voice) u.voice = voice;
+    u.onerror = e=>{ if(e.error!=="interrupted" && e.error!=="canceled") toast("Dźwięk nie zadziałał. Na iPhonie: wyłącz tryb cichy (przełącznik z boku) i podgłośnij."); };
+    current = u;
+    if(ss.paused) ss.resume();
+    ss.speak(u);
+  };
+  if(!unlocked){ unlocked = true; ss.speak(new SpeechSynthesisUtterance("")); } // first tap unlocks audio on iOS
+  if(ss.speaking || ss.pending){ ss.cancel(); setTimeout(go, 120); } else { go(); }
 }
+// iOS pauses synthesis when the screen locks; resume when the page comes back
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && "speechSynthesis" in window && speechSynthesis.paused) speechSynthesis.resume(); });
 function toast(msg){ const r=$("write-result"); r.className="result bad"; r.textContent=msg; r.hidden=false; }
 
 // ---------- ORDER: hard items come back sooner ----------
