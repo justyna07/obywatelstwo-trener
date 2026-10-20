@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Obywatelstwo Trener</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Libre+Caslon+Text:wght@400;700&display=swap">
+<style>
+/* Layout: single column, one learner badge in the header, four large tabs, one card at a time. Built for older eyes: 20px base, 56px tap targets. */
+:root{
+  --bg:#EEF0F3; --card:#FFFFFF; --fg:#16233A; --muted:#5B6678; --line:#D3D8E0;
+  --accent:#1F4E8C; --accent-fg:#FFFFFF; --soft:#E3EAF5;
+  --good:#237A4A; --good-soft:#DDF0E4; --warn:#B23F2A; --warn-soft:#F7E1DC;
+  --display:"Libre Caslon Text",Georgia,"Times New Roman",serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#141A24; --card:#1E2733; --fg:#E8ECF1; --muted:#A3ADBC; --line:#344051;
+  --accent:#7FA7E0; --accent-fg:#0E1420; --soft:#263347;
+  --good:#6FCB95; --good-soft:#1F3A2B; --warn:#F08A74; --warn-soft:#44241E; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#141A24; --card:#1E2733; --fg:#E8ECF1; --muted:#A3ADBC; --line:#344051;
+  --accent:#7FA7E0; --accent-fg:#0E1420; --soft:#263347;
+  --good:#6FCB95; --good-soft:#1F3A2B; --warn:#F08A74; --warn-soft:#44241E; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:20px;line-height:1.5;margin:0}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px}
+h1{font-family:var(--display);font-size:1.6rem;margin:0;line-height:1.2;text-wrap:balance}
+.sub{color:var(--muted);font-size:.9rem;margin:4px 0 0}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.learner{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px}
+.learner button{border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;padding:8px 18px;border-radius:999px;cursor:pointer;min-height:44px}
+.learner button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+nav.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:18px}
+nav.tabs button{border:1px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-weight:700;font-size:1rem;padding:10px 4px;border-radius:12px;cursor:pointer;min-height:56px;line-height:1.15}
+nav.tabs button small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
+nav.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+nav.tabs button[aria-selected="true"] small{color:var(--accent-fg);opacity:.85}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px}
+.card+.card{margin-top:16px}
+.eyebrow{text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;color:var(--muted);font-weight:700;margin:0 0 8px}
+.sentence{font-family:var(--display);font-size:2rem;line-height:1.35;margin:4px 0 10px;text-wrap:balance}
+.pl{color:var(--muted);font-size:1.05rem;margin:0 0 14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-weight:700;padding:12px 18px;border-radius:12px;cursor:pointer;min-height:56px;flex:1 1 140px}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.good{background:var(--good-soft);color:var(--good);border-color:transparent}
+.btn.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.btn.quiet{flex:0 1 auto;font-weight:400;color:var(--muted)}
+.btn:focus-visible,nav.tabs button:focus-visible,.learner button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+textarea{width:100%;font:inherit;font-size:1.4rem;padding:14px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--fg);min-height:110px;resize:vertical}
+textarea:focus{outline:3px solid var(--accent);border-color:transparent}
+.result{margin-top:14px;padding:14px 16px;border-radius:12px;font-size:1.1rem}
+.result.ok{background:var(--good-soft);color:var(--good)}
+.result.bad{background:var(--warn-soft);color:var(--warn)}
+.diff{font-family:var(--display);font-size:1.5rem;line-height:1.5;margin-top:8px;color:var(--fg)}
+.diff .w{padding:2px 4px;border-radius:6px}
+.diff .w.miss{background:var(--warn-soft);color:var(--warn);text-decoration:underline}
+.diff .w.hit{color:var(--good)}
+.progressbar{height:10px;background:var(--line);border-radius:999px;overflow:hidden;margin-top:10px}
+.progressbar i{display:block;height:100%;background:var(--good);width:0}
+.meta{display:flex;justify-content:space-between;color:var(--muted);font-size:.9rem;margin-top:8px;font-variant-numeric:tabular-nums}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{border:1px solid var(--line);background:var(--card);color:var(--fg);font:inherit;font-size:.9rem;padding:8px 14px;border-radius:999px;cursor:pointer;min-height:44px}
+.chip[aria-pressed="true"]{background:var(--soft);border-color:var(--accent);color:var(--accent);font-weight:700}
+.wordlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.word{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--card)}
+.word b{font-size:1.2rem}
+.word span{color:var(--muted);font-size:.95rem;grid-column:1}
+.word .play{grid-row:1/3;border:0;background:var(--soft);color:var(--accent);border-radius:50%;width:48px;height:48px;font-size:1.2rem;cursor:pointer}
+.word.hard{border-color:var(--warn)}
+.word.ok{border-color:var(--good)}
+.word .mark{grid-column:1/3;display:flex;gap:6px}
+.word .mark button{flex:1;border:1px solid var(--line);background:transparent;color:var(--muted);font:inherit;font-size:.85rem;padding:6px;border-radius:8px;cursor:pointer;min-height:40px}
+.word .mark button.on-ok{background:var(--good-soft);color:var(--good);border-color:transparent}
+.word .mark button.on-hard{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{border:1px solid var(--line);border-radius:12px;padding:14px}
+.stat .n{font-size:2.2rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.stat .l{color:var(--muted);font-size:.9rem;margin-top:4px}
+.hardlist{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-wrap:wrap;gap:8px}
+.hardlist li{background:var(--warn-soft);color:var(--warn);padding:6px 12px;border-radius:999px;font-size:.95rem}
+.note{color:var(--muted);font-size:.9rem;margin-top:12px}
+.hint{background:var(--soft);border-radius:12px;padding:12px 16px;font-size:.95rem;margin-bottom:14px}
+.hint b{color:var(--accent)}
+.rate{display:flex;align-items:center;gap:10px;font-size:.9rem;color:var(--muted)}
+.rate input{accent-color:var(--accent);flex:1;min-width:0}
+@media (max-width:480px){ body{font-size:18px} .sentence{font-size:1.65rem} nav.tabs button{font-size:.9rem} .card{padding:16px} }
+@media (prefers-reduced-motion:no-preference){ .progressbar i{transition:width .4s ease} }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Obywatelstwo Trener</h1>
+    <p class="sub">Test z czytania i pisania po angielsku · USCIS N-400</p>
+  </div>
+  <div class="learner" role="group" aria-label="Kto się uczy?">
+    <button type="button" id="lrn-mama" data-learner="mama" aria-pressed="true">Mama</button>
+    <button type="button" id="lrn-tata" data-learner="tata" aria-pressed="false">Tata</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button type="button" id="tab-read" role="tab" aria-selected="true" data-tab="read">Czytanie<small>Reading</small></button>
+  <button type="button" id="tab-write" role="tab" aria-selected="false" data-tab="write">Pisanie<small>Writing</small></button>
+  <button type="button" id="tab-words" role="tab" aria-selected="false" data-tab="words">Słówka<small>Vocabulary</small></button>
+  <button type="button" id="tab-progress" role="tab" aria-selected="false" data-tab="progress">Postępy<small>Progress</small></button>
+</nav>
+
+<!-- READING -->
+<section id="view-read">
+  <div class="hint">Na egzaminie <b>przeczytasz na głos</b> jedno z trzech zdań. Liczy się zrozumienie, nie akcent. Przeczytaj zdanie, potem naciśnij <b>Posłuchaj</b>, żeby porównać.</div>
+  <div class="card">
+    <p class="eyebrow">Przeczytaj na głos · Read aloud</p>
+    <p class="sentence" id="read-sentence"></p>
+    <p class="pl" id="read-pl" hidden></p>
+    <div class="row">
+      <button type="button" class="btn primary" id="read-play">🔊 Posłuchaj</button>
+      <button type="button" class="btn" id="read-toggle-pl">Pokaż po polsku</button>
+    </div>
+    <div class="row">
+      <button type="button" class="btn good" id="read-ok">✓ Umiem</button>
+      <button type="button" class="btn warn" id="read-hard">Trudne, powtórz</button>
+    </div>
+    <div class="progressbar"><i id="read-bar"></i></div>
+    <div class="meta"><span id="read-count"></span><span id="read-pos"></span></div>
+  </div>
+  <p class="note">Zdania „Trudne" wracają częściej. Zielony pasek = ile zdań oznaczono „Umiem".</p>
+</section>
+
+<!-- WRITING -->
+<section id="view-write" hidden>
+  <div class="hint">Na egzaminie urzędnik <b>przeczyta zdanie</b>, a Ty je <b>napiszesz</b>. Tutaj robi to komputer. Posłuchaj (można wiele razy), napisz, naciśnij <b>Sprawdź</b>. Małe/wielkie litery i przecinki nie liczą się jako błąd.</div>
+  <div class="card">
+    <p class="eyebrow">Dyktando · Dictation</p>
+    <div class="row" style="margin-top:0">
+      <button type="button" class="btn primary" id="write-play">🔊 Posłuchaj zdania</button>
+      <button type="button" class="btn quiet" id="write-reveal">Pokaż zdanie</button>
+    </div>
+    <div class="rate" style="margin:12px 0 4px">
+      <label for="write-rate">Tempo</label>
+      <input type="range" id="write-rate" min="0.5" max="1" step="0.1" value="0.75">
+      <span id="write-rate-val">wolno</span>
+    </div>
+    <p class="sentence" id="write-sentence" hidden></p>
+    <p class="pl" id="write-pl" hidden></p>
+    <label for="write-input" class="eyebrow" style="display:block;margin-top:12px">Napisz tutaj · Write here</label>
+    <textarea id="write-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="..."></textarea>
+    <div class="row">
+      <button type="button" class="btn primary" id="write-check">Sprawdź</button>
+      <button type="button" class="btn" id="write-next">Następne →</button>
+    </div>
+    <div id="write-result" hidden></div>
+    <div class="progressbar"><i id="write-bar"></i></div>
+    <div class="meta"><span id="write-count"></span><span id="write-pos"></span></div>
+  </div>
+</section>
+
+<!-- WORDS -->
+<section id="view-words" hidden>
+  <div class="hint">To są <b>wszystkie oficjalne słowa</b> z list USCIS. Każde zdanie na egzaminie składa się tylko z tych słów. Naciśnij 🔊, żeby usłyszeć wymowę.</div>
+  <div class="chips" id="word-lists">
+    <button type="button" class="chip" data-list="write" aria-pressed="true">Pisanie (do napisania)</button>
+    <button type="button" class="chip" data-list="read" aria-pressed="false">Czytanie (do przeczytania)</button>
+  </div>
+  <div class="chips" id="word-cats"></div>
+  <div class="wordlist" id="word-grid"></div>
+</section>
+
+<!-- PROGRESS -->
+<section id="view-progress" hidden>
+  <div class="card">
+    <p class="eyebrow" id="prog-title"></p>
+    <div class="stats">
+      <div class="stat"><div class="n" id="st-read"></div><div class="l">zdań do czytania „Umiem"</div></div>
+      <div class="stat"><div class="n" id="st-write"></div><div class="l">dyktand napisanych bez błędu</div></div>
+      <div class="stat"><div class="n" id="st-words"></div><div class="l">słówek „Umiem"</div></div>
+      <div class="stat"><div class="n" id="st-attempts"></div><div class="l">prób dyktanda łącznie</div></div>
+    </div>
+    <p class="eyebrow" style="margin-top:20px">Słowa, które sprawiają trudność</p>
+    <ul class="hardlist" id="hard-words"></ul>
+    <p class="note" id="hard-note"></p>
+    <div class="row">
+      <button type="button" class="btn quiet" id="reset">Wyczyść postępy tej osoby</button>
+    </div>
+    <div id="reset-confirm" class="result bad" hidden>Na pewno? <button type="button" class="btn warn" id="reset-yes" style="min-height:44px;flex:0 1 auto;margin-left:8px">Tak, wyczyść</button></div>
+  </div>
+  <p class="note">Postępy zapisują się w tej przeglądarce, na tym urządzeniu. Telefon i laptop mają osobne postępy.</p>
+</section>
+</div>
+
+<script>
+// ---------- DATA: sentence pairs built only from the official USCIS vocabulary lists ----------
+// r = reading sentence (reading list only), w = writing sentence (writing list only), pl = Polish meaning
+const PAIRS = [
+ {id:1, r:"Who was the first President?", w:"Washington was the first President.", plr:"Kto był pierwszym prezydentem?", plw:"Waszyngton był pierwszym prezydentem."},
+ {id:2, r:"Who lives in the White House?", w:"The President lives in the White House.", plr:"Kto mieszka w Białym Domu?", plw:"Prezydent mieszka w Białym Domu."},
+ {id:3, r:"What is the capital of the United States?", w:"Washington, D.C. is the capital of the United States.", plr:"Co jest stolicą Stanów Zjednoczonych?", plw:"Waszyngton D.C. jest stolicą Stanów Zjednoczonych."},
+ {id:4, r:"Who elects Congress?", w:"The people elect Congress.", plr:"Kto wybiera Kongres?", plw:"Ludzie wybierają Kongres."},
+ {id:5, r:"When is Independence Day?", w:"Independence Day is in July.", plr:"Kiedy jest Dzień Niepodległości?", plw:"Dzień Niepodległości jest w lipcu."},
+ {id:6, r:"Where is the White House?", w:"The White House is in Washington, D.C.", plr:"Gdzie jest Biały Dom?", plw:"Biały Dom jest w Waszyngtonie D.C."},
+ {id:7, r:"What country is north of the United States?", w:"Canada is north of the United States.", plr:"Jaki kraj leży na północ od Stanów Zjednoczonych?", plw:"Kanada leży na północ od Stanów Zjednoczonych."},
+ {id:8, r:"What country is south of the United States?", w:"Mexico is south of the United States.", plr:"Jaki kraj leży na południe od Stanów Zjednoczonych?", plw:"Meksyk leży na południe od Stanów Zjednoczonych."},
+ {id:9, r:"Who is the Father of Our Country?", w:"Washington is the Father of Our Country.", plr:"Kto jest Ojcem Naszego Kraju?", plw:"Waszyngton jest Ojcem Naszego Kraju."},
+ {id:10, r:"When is Thanksgiving?", w:"Thanksgiving is in November.", plr:"Kiedy jest Święto Dziękczynienia?", plw:"Święto Dziękczynienia jest w listopadzie."},
+ {id:11, r:"When is Flag Day?", w:"Flag Day is in June.", plr:"Kiedy jest Dzień Flagi?", plw:"Dzień Flagi jest w czerwcu."},
+ {id:12, r:"When is Labor Day?", w:"Labor Day is in September.", plr:"Kiedy jest Święto Pracy?", plw:"Święto Pracy jest we wrześniu."},
+ {id:13, r:"When is Memorial Day?", w:"Memorial Day is in May.", plr:"Kiedy jest Dzień Pamięci?", plw:"Dzień Pamięci jest w maju."},
+ {id:14, r:"When is Presidents' Day?", w:"Presidents' Day is in February.", plr:"Kiedy jest Dzień Prezydentów?", plw:"Dzień Prezydentów jest w lutym."},
+ {id:15, r:"When is Columbus Day?", w:"Columbus Day is in October.", plr:"Kiedy jest Dzień Kolumba?", plw:"Dzień Kolumba jest w październiku."},
+ {id:16, r:"What is the largest state?", w:"Alaska is the largest state.", plr:"Który stan jest największy?", plw:"Alaska jest największym stanem."},
+ {id:17, r:"Who was Abraham Lincoln?", w:"Lincoln was the President during the Civil War.", plr:"Kim był Abraham Lincoln?", plw:"Lincoln był prezydentem podczas wojny secesyjnej."},
+ {id:18, r:"What do people pay?", w:"People pay taxes.", plr:"Co płacą ludzie?", plw:"Ludzie płacą podatki."},
+ {id:19, r:"Who can vote?", w:"Citizens can vote.", plr:"Kto może głosować?", plw:"Obywatele mogą głosować."},
+ {id:20, r:"What colors are on the American flag?", w:"The flag is red, white, and blue.", plr:"Jakie kolory są na fladze amerykańskiej?", plw:"Flaga jest czerwona, biała i niebieska."},
+ {id:21, r:"How many Senators does Congress have?", w:"Congress has one hundred Senators.", plr:"Ilu senatorów ma Kongres?", plw:"Kongres ma stu senatorów."},
+ {id:22, r:"How many states does the United States have?", w:"The United States has fifty states.", plr:"Ile stanów mają Stany Zjednoczone?", plw:"Stany Zjednoczone mają pięćdziesiąt stanów."},
+ {id:23, r:"What was the first state?", w:"Delaware was the first state.", plr:"Który stan był pierwszy?", plw:"Delaware był pierwszym stanem."},
+ {id:24, r:"What is one right in the Bill of Rights?", w:"Freedom of speech is one right.", plr:"Jakie jest jedno prawo w Karcie Praw?", plw:"Wolność słowa to jedno prawo."},
+ {id:25, r:"Where does Congress meet?", w:"Congress meets in Washington, D.C.", plr:"Gdzie zbiera się Kongres?", plw:"Kongres zbiera się w Waszyngtonie D.C."},
+ {id:26, r:"Who lived here first?", w:"American Indians lived here first.", plr:"Kto mieszkał tu pierwszy?", plw:"Indianie amerykańscy mieszkali tu pierwsi."},
+ {id:27, r:"What do we want?", w:"We want to be free.", plr:"Czego chcemy?", plw:"Chcemy być wolni."},
+ {id:28, r:"Who is on the dollar bill?", w:"Washington is on the dollar bill.", plr:"Kto jest na banknocie dolarowym?", plw:"Waszyngton jest na banknocie dolarowym."},
+ {id:29, r:"Who was the second President?", w:"Adams was the second President.", plr:"Kto był drugim prezydentem?", plw:"Adams był drugim prezydentem."},
+ {id:30, r:"Why do people come to America?", w:"People come to the United States to be free.", plr:"Dlaczego ludzie przyjeżdżają do Ameryki?", plw:"Ludzie przyjeżdżają do Stanów Zjednoczonych, żeby być wolni."},
+ {id:31, r:"When do we vote for President?", w:"We vote for President in November.", plr:"Kiedy głosujemy na prezydenta?", plw:"Głosujemy na prezydenta w listopadzie."},
+ {id:32, r:"Who elects the President?", w:"The people elect the President.", plr:"Kto wybiera prezydenta?", plw:"Ludzie wybierają prezydenta."},
+ {id:33, r:"Who has the right to vote?", w:"Citizens have the right to vote.", plr:"Kto ma prawo głosować?", plw:"Obywatele mają prawo głosować."},
+ {id:34, r:"Where is Canada?", w:"Canada is north of the United States.", plr:"Gdzie jest Kanada?", plw:"Kanada leży na północ od Stanów Zjednoczonych."},
+ {id:35, r:"What is one state?", w:"California is one state.", plr:"Podaj jeden stan.", plw:"Kalifornia to jeden stan."},
+ {id:36, r:"Where is the capital?", w:"The capital is in Washington, D.C.", plr:"Gdzie jest stolica?", plw:"Stolica jest w Waszyngtonie D.C."},
+];
+
+// Official USCIS vocabulary lists with Polish meanings
+const WORDS = {
+ read: {
+  "Ludzie":[["George Washington","George Washington"],["Abraham Lincoln","Abraham Lincoln"]],
+  "Państwo":[["American flag","flaga amerykańska"],["Bill of Rights","Karta Praw"],["capital","stolica"],["citizen","obywatel"],["city","miasto"],["Congress","Kongres"],["country","kraj"],["Father of Our Country","Ojciec Naszego Kraju"],["government","rząd"],["President","prezydent"],["right","prawo"],["Senators","senatorowie"],["state / states","stan / stany"],["White House","Biały Dom"]],
+  "Miejsca":[["America","Ameryka"],["U.S.","USA"],["United States","Stany Zjednoczone"]],
+  "Święta":[["Presidents' Day","Dzień Prezydentów"],["Memorial Day","Dzień Pamięci"],["Flag Day","Dzień Flagi"],["Independence Day","Dzień Niepodległości"],["Labor Day","Święto Pracy"],["Columbus Day","Dzień Kolumba"],["Thanksgiving","Święto Dziękczynienia"]],
+  "Pytania":[["How","jak"],["What","co"],["When","kiedy"],["Where","gdzie"],["Who","kto"],["Why","dlaczego"]],
+  "Czasowniki":[["can","móc"],["come","przyjść, przybyć"],["do / does","robić (słowo pomocnicze w pytaniu)"],["elects","wybiera"],["have / has","mieć"],["is / are / was / be","być"],["lives / lived","mieszka / mieszkał"],["meet","spotykać się"],["name","nazwać, wymienić"],["pay","płacić"],["vote","głosować"],["want","chcieć"]],
+  "Słowa pomocnicze":[["a","(przedimek: jakiś)"],["for","dla, na"],["here","tutaj"],["in","w"],["of","(z, od – łączy słowa)"],["on","na"],["the","(przedimek: ten)"],["to","do"],["we","my"]],
+  "Inne":[["colors","kolory"],["dollar bill","banknot dolarowy"],["first","pierwszy"],["largest","największy"],["many","wiele"],["most","najwięcej"],["north","północ"],["one","jeden"],["people","ludzie"],["second","drugi"],["south","południe"]]
+ },
+ write: {
+  "Ludzie":[["Adams","Adams"],["Lincoln","Lincoln"],["Washington","Waszyngton"]],
+  "Państwo":[["American Indians","Indianie amerykańscy"],["capital","stolica"],["citizens","obywatele"],["Civil War","wojna secesyjna"],["Congress","Kongres"],["Father of Our Country","Ojciec Naszego Kraju"],["flag","flaga"],["free","wolny"],["freedom of speech","wolność słowa"],["President","prezydent"],["right","prawo"],["Senators","senatorowie"],["state / states","stan / stany"],["White House","Biały Dom"]],
+  "Miejsca":[["Alaska","Alaska"],["California","Kalifornia"],["Canada","Kanada"],["Delaware","Delaware"],["Mexico","Meksyk"],["New York City","Nowy Jork"],["United States","Stany Zjednoczone"],["Washington","Waszyngton"],["Washington, D.C.","Waszyngton D.C."]],
+  "Miesiące":[["February","luty"],["May","maj"],["June","czerwiec"],["July","lipiec"],["September","wrzesień"],["October","październik"],["November","listopad"]],
+  "Święta":[["Presidents' Day","Dzień Prezydentów"],["Memorial Day","Dzień Pamięci"],["Flag Day","Dzień Flagi"],["Independence Day","Dzień Niepodległości"],["Labor Day","Święto Pracy"],["Columbus Day","Dzień Kolumba"],["Thanksgiving","Święto Dziękczynienia"]],
+  "Czasowniki":[["can","móc"],["come","przyjść, przybyć"],["elect","wybierać"],["have / has","mieć"],["is / was / be","być"],["lives / lived","mieszka / mieszkał"],["meets","spotyka się, zbiera się"],["pay","płacić"],["vote","głosować"],["want","chcieć"]],
+  "Słowa pomocnicze":[["and","i"],["during","podczas"],["for","dla, na"],["here","tutaj"],["in","w"],["of","(z, od – łączy słowa)"],["on","na"],["the","(przedimek: ten)"],["to","do"],["we","my"]],
+  "Inne":[["blue","niebieski"],["dollar bill","banknot dolarowy"],["fifty / 50","pięćdziesiąt"],["first","pierwszy"],["largest","największy"],["most","najwięcej"],["north","północ"],["one","jeden"],["one hundred / 100","sto"],["people","ludzie"],["red","czerwony"],["second","drugi"],["south","południe"],["taxes","podatki"],["white","biały"]]
+ }
+};
+
+// ---------- STATE ----------
+let learner = "mama";
+const $ = id => document.getElementById(id);
+const blank = () => ({read:{}, write:{}, words:{}, attempts:0, misses:{}});
+function load(){ try{ const raw = localStorage.getItem("obyw."+learner); if(raw){ return Object.assign(blank(), JSON.parse(raw)); } }catch(e){} return blank(); }
+function save(){ try{ localStorage.setItem("obyw."+learner, JSON.stringify(state)); }catch(e){} }
+let state = load();
+try{ const l = localStorage.getItem("obyw.learner"); if(l==="mama"||l==="tata"){ learner=l; state=load(); } }catch(e){}
+
+// ---------- SPEECH ----------
+let voice = null;
+function pickVoice(){
+  if(!("speechSynthesis" in window)) return;
+  const vs = speechSynthesis.getVoices();
+  voice = vs.find(v=>/en[-_]US/i.test(v.lang) && /Samantha|Google US|Aria|Jenny|Zira/i.test(v.name))
+       || vs.find(v=>/en[-_]US/i.test(v.lang)) || vs.find(v=>/^en/i.test(v.lang)) || null;
+}
+if("speechSynthesis" in window){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text, rate){
+  if(!("speechSynthesis" in window)){ toast("Ta przeglądarka nie czyta na głos. Spróbuj Chrome lub Safari."); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-US"; u.rate = rate || 0.85; if(voice) u.voice = voice;
+  speechSynthesis.speak(u);
+}
+function toast(msg){ const r=$("write-result"); r.className="result bad"; r.textContent=msg; r.hidden=false; }
+
+// ---------- ORDER: hard items come back sooner ----------
+function nextIndex(kind, current){
+  const marks = state[kind];
+  const hard = PAIRS.map((p,i)=>i).filter(i=>marks[PAIRS[i].id]==="hard" && i!==current);
+  const fresh = PAIRS.map((p,i)=>i).filter(i=>!marks[PAIRS[i].id] && i!==current);
+  const pool = (hard.length && Math.random()<0.5) ? hard : (fresh.length ? fresh : (hard.length ? hard : PAIRS.map((p,i)=>i).filter(i=>i!==current)));
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+// ---------- READING ----------
+let ri = 0;
+function showRead(){
+  const p = PAIRS[ri];
+  $("read-sentence").textContent = p.r;
+  $("read-pl").textContent = p.plr;
+  $("read-pl").hidden = true; $("read-toggle-pl").textContent = "Pokaż po polsku";
+  const okN = Object.values(state.read).filter(v=>v==="ok").length;
+  $("read-bar").style.width = (okN/PAIRS.length*100)+"%";
+  $("read-count").textContent = okN+" / "+PAIRS.length+" umiem";
+  $("read-pos").textContent = state.read[p.id]==="hard" ? "powtórka" : (state.read[p.id]==="ok" ? "już umiesz" : "nowe");
+}
+$("read-play").onclick = ()=>speak(PAIRS[ri].r, 0.85);
+$("read-toggle-pl").onclick = ()=>{ const el=$("read-pl"); el.hidden=!el.hidden; $("read-toggle-pl").textContent = el.hidden?"Pokaż po polsku":"Ukryj polski"; };
+$("read-ok").onclick = ()=>{ state.read[PAIRS[ri].id]="ok"; save(); ri=nextIndex("read",ri); showRead(); };
+$("read-hard").onclick = ()=>{ state.read[PAIRS[ri].id]="hard"; save(); ri=nextIndex("read",ri); showRead(); };
+
+// ---------- WRITING ----------
+let wi = 0;
+const NUM = {"50":"fifty","100":"one hundred"};
+function norm(s){
+  return s.toLowerCase().replace(/\bd\.?\s?c\.?(?=\s|$)/g,"dc").replace(/[.,!?;:'"’]/g," ").replace(/\b(50|100)\b/g,m=>NUM[m]).split(/\s+/).filter(Boolean);
+}
+function showWrite(){
+  const p = PAIRS[wi];
+  $("write-sentence").textContent = p.w; $("write-sentence").hidden = true;
+  $("write-pl").textContent = p.plw; $("write-pl").hidden = true;
+  $("write-input").value = ""; $("write-result").hidden = true;
+  const okN = Object.values(state.write).filter(v=>v==="ok").length;
+  $("write-bar").style.width = (okN/PAIRS.length*100)+"%";
+  $("write-count").textContent = okN+" / "+PAIRS.length+" bez błędu";
+  $("write-pos").textContent = state.write[p.id]==="hard" ? "powtórka" : (state.write[p.id]==="ok" ? "już umiesz" : "nowe");
+}
+$("write-play").onclick = ()=>speak(PAIRS[wi].w, parseFloat($("write-rate").value));
+$("write-rate").oninput = ()=>{ const v=parseFloat($("write-rate").value); $("write-rate-val").textContent = v<=0.6?"bardzo wolno":(v<=0.8?"wolno":"normalnie"); };
+$("write-reveal").onclick = ()=>{ $("write-sentence").hidden=false; $("write-pl").hidden=false; };
+$("write-next").onclick = ()=>{ wi=nextIndex("write",wi); showWrite(); };
+$("write-check").onclick = ()=>{
+  const p = PAIRS[wi];
+  const want = norm(p.w), got = norm($("write-input").value);
+  if(!got.length){ toast("Najpierw napisz zdanie."); return; }
+  state.attempts++;
+  // word-by-word: mark each expected word hit/miss by position with a small tolerance for dropped words
+  let gi=0; const parts=[]; let misses=0;
+  want.forEach(w=>{
+    const found = got.slice(gi, gi+2).indexOf(w);
+    if(found>=0){ gi += found+1; parts.push([w,true]); }
+    else { parts.push([w,false]); misses++; state.misses[w]=(state.misses[w]||0)+1; }
+  });
+  const extra = got.length - gi;
+  const r = $("write-result");
+  $("write-sentence").hidden=false; $("write-pl").hidden=false;
+  if(misses===0 && extra===0){
+    state.write[p.id]="ok"; r.className="result ok";
+    r.innerHTML = "<b>Dobrze! Bez błędu.</b>";
+  } else {
+    state.write[p.id]="hard"; r.className="result bad";
+    r.innerHTML = "<b>"+(misses?"Popraw podkreślone słowa.":"Jest za dużo słów – sprawdź zdanie.")+"</b>";
+  }
+  const diff = document.createElement("div"); diff.className="diff";
+  parts.forEach(([w,ok])=>{ const s=document.createElement("span"); s.className="w "+(ok?"hit":"miss"); s.textContent=w; diff.appendChild(s); diff.appendChild(document.createTextNode(" ")); });
+  r.appendChild(diff);
+  r.hidden=false; save();
+  const okN = Object.values(state.write).filter(v=>v==="ok").length;
+  $("write-bar").style.width = (okN/PAIRS.length*100)+"%";
+  $("write-count").textContent = okN+" / "+PAIRS.length+" bez błędu";
+};
+$("write-input").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); $("write-check").click(); } });
+
+// ---------- WORDS ----------
+let wordList="write", wordCat=null;
+function renderCats(){
+  const cats = Object.keys(WORDS[wordList]); if(!cats.includes(wordCat)) wordCat = cats[0];
+  const box = $("word-cats"); box.innerHTML="";
+  cats.forEach(c=>{ const b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=c; b.setAttribute("aria-pressed", c===wordCat); b.onclick=()=>{ wordCat=c; renderCats(); renderWords(); }; box.appendChild(b); });
+}
+function renderWords(){
+  const grid = $("word-grid"); grid.innerHTML="";
+  WORDS[wordList][wordCat].forEach(([en,pl])=>{
+    const key = en;
+    const st = state.words[key];
+    const d = document.createElement("div"); d.className="word "+(st||"");
+    const b = document.createElement("b"); b.textContent = en;
+    const s = document.createElement("span"); s.textContent = pl;
+    const play = document.createElement("button"); play.type="button"; play.className="play"; play.textContent="🔊"; play.setAttribute("aria-label","Posłuchaj: "+en); play.onclick=()=>speak(en.split(" / ")[0], 0.8);
+    const mark = document.createElement("div"); mark.className="mark";
+    const ok = document.createElement("button"); ok.type="button"; ok.textContent="Umiem"; ok.className = st==="ok"?"on-ok":"";
+    const hard = document.createElement("button"); hard.type="button"; hard.textContent="Trudne"; hard.className = st==="hard"?"on-hard":"";
+    ok.onclick=()=>{ state.words[key]= st==="ok"?undefined:"ok"; save(); renderWords(); };
+    hard.onclick=()=>{ state.words[key]= st==="hard"?undefined:"hard"; save(); renderWords(); };
+    mark.append(ok,hard);
+    d.append(b,play,s,mark); grid.appendChild(d);
+  });
+}
+document.querySelectorAll("#word-lists .chip").forEach(c=>c.onclick=()=>{ wordList=c.dataset.list; document.querySelectorAll("#word-lists .chip").forEach(x=>x.setAttribute("aria-pressed", x===c)); renderCats(); renderWords(); });
+
+// ---------- PROGRESS ----------
+function renderProgress(){
+  $("prog-title").textContent = (learner==="mama"?"Mama":"Tata")+" · postępy";
+  $("st-read").textContent = Object.values(state.read).filter(v=>v==="ok").length+" / "+PAIRS.length;
+  $("st-write").textContent = Object.values(state.write).filter(v=>v==="ok").length+" / "+PAIRS.length;
+  const totalWords = Object.values(WORDS.read).flat().length + Object.values(WORDS.write).flat().length;
+  $("st-words").textContent = Object.values(state.words).filter(v=>v==="ok").length;
+  $("st-attempts").textContent = state.attempts;
+  const ul = $("hard-words"); ul.innerHTML="";
+  const top = Object.entries(state.misses).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  const hardMarked = Object.entries(state.words).filter(([k,v])=>v==="hard").map(([k])=>k);
+  const combined = [...new Set([...top.map(([w])=>w), ...hardMarked])];
+  combined.forEach(w=>{ const li=document.createElement("li"); const n=state.misses[w]; li.textContent = w + (n?" · "+n+"×":""); ul.appendChild(li); });
+  $("hard-note").textContent = combined.length ? "Liczba = ile razy słowo było źle napisane w dyktandzie. Ćwicz te słowa w zakładce Słówka." : "Jeszcze nic. Zrób kilka dyktand, a tutaj pojawią się słowa do powtórki.";
+  $("reset-confirm").hidden = true;
+}
+$("reset").onclick = ()=>{ $("reset-confirm").hidden=false; };
+$("reset-yes").onclick = ()=>{ state = blank(); save(); renderAll(); };
+
+// ---------- NAV ----------
+function showTab(t){
+  ["read","write","words","progress"].forEach(k=>{ $("view-"+k).hidden = k!==t; $("tab-"+k).setAttribute("aria-selected", k===t); });
+  if(t==="progress") renderProgress();
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+  try{ history.replaceState(null,"","#"+t); }catch(e){}
+}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+document.querySelectorAll(".learner button").forEach(b=>b.onclick=()=>{
+  learner=b.dataset.learner; state=load();
+  try{ localStorage.setItem("obyw.learner", learner); }catch(e){}
+  document.querySelectorAll(".learner button").forEach(x=>x.setAttribute("aria-pressed", x===b));
+  renderAll();
+});
+function renderAll(){
+  document.querySelectorAll(".learner button").forEach(x=>x.setAttribute("aria-pressed", x.dataset.learner===learner));
+  ri = nextIndex("read",-1); wi = nextIndex("write",-1);
+  showRead(); showWrite(); renderCats(); renderWords(); renderProgress();
+}
+renderAll();
+const h = (location.hash||"").replace("#","");
+if(["read","write","words","progress"].includes(h)) showTab(h);
+</script>
+</body>
+</html>
